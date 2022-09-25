@@ -3,12 +3,9 @@ import imutils
 import time
 import math
 import multiple_frames
-import redis
 from pygame import mixer
-import socket
 
-sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-serverAddressPort = ("127.0.0.1", 5052)
+
 
 
 def on_low_H_thresh_trackbar(val):
@@ -65,7 +62,7 @@ def gradient(pt1, pt2):
 
 
 
-def getAngle(all_centers,frame, index, frame_height):
+def getAngle(all_centers,frame, index, frame_height, hit_state):
     pt1, pt2, pt3 = all_centers[-3:]
 
     m1 = gradient(pt2, pt1)
@@ -79,7 +76,8 @@ def getAngle(all_centers,frame, index, frame_height):
 
     # time.sleep(0.5)
 
-    if abs(angD) > 17:
+    if abs(angD) > 17 and not hit_state:
+        hit_state = True
         cv2.putText(frame, "wall hit", (pt1[0] - 40, pt1[1] - 50), cv2.FACE_RECOGNIZER_SF_FR_COSINE, 1.5, (255, 0, 255, 2))
         mixer.init()
         sound = mixer.Sound("hit1.wav")
@@ -87,8 +85,7 @@ def getAngle(all_centers,frame, index, frame_height):
         cv2.imwrite("pics/frame"+str(index)+".png", cv2.resize(frame, (int(height / 2), int(width / 2))))
         data = (pt2[0],frame_height-pt2[1])
         print("index 0",data[0], "index 1", data[1])
-        data = str.encode(str(data))
-        sock.sendto(data, serverAddressPort)
+
 
 def mousePoints(event, x, y, flags, params):
     if event == cv2.EVENT_LBUTTONDOWN:
@@ -125,19 +122,18 @@ cv2.createTrackbar(high_V_name, window_detection_name, high_V, max_value, on_hig
 greenLower = (46, 65, 50)
 greenUpper = (80, 255, 255)
 
-# greenLower = (29, 86, 6)
-# greenUpper = (64, 255, 255)
+
 
 vs = cv2.VideoCapture(0)
-time.sleep(2.0)
-all_centers = []
-point_list = []
+all_centers = [] # cordinates of ball in each frame
+point_list = [] # clicked postion
+hit_state = False # when ball hit the wall 
 phase = 0
 i = 0
-redis.Redis(host='localhost', port=6379)
 
 ball_detected = False
-
+load = 0
+load = int(input("load parameters: "))
 
 while True:
     i += 1
@@ -146,6 +142,19 @@ while True:
 
     if frame is None:
         break
+    
+
+    if load == 1:
+        cv2.destroyAllWindows()
+        file = open("threshold.txt", 'r')
+        res = file.read()
+        print(res)
+        arr = res.split(" ")
+        greenLower = (int(arr[0]),int(arr[1]),int(arr[2]))
+        greenUpper = (int(arr[3]),int(arr[4]),int(arr[5]))
+        print(greenLower, greenUpper)
+        phase = 1
+        load = 0
 
     if phase == 0:
         frame_HSV = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -153,10 +162,16 @@ while True:
         cv2.imshow(window_capture_name, frame)
         cv2.imshow(window_detection_name, frame_threshold)
         cv2.setMouseCallback(window_capture_name, mousePoints)
+
         if len(point_list) == 2 :
             cv2.destroyAllWindows()
             greenLower = (low_H, low_S, low_V)
             greenUpper = (high_H, high_S, high_V)
+            file = open("threshold.txt", 'w')
+            res = f"{low_H} {low_S} {low_V} {high_H} {high_S} {high_V}"
+            file.write(res)
+            file.close()
+
             phase = 1
             point_list.clear()
 
@@ -212,10 +227,11 @@ while True:
                 for ii in all_centers:
                     cv2.circle(frame, ii, 5, (0, 0, 255), -1)
                 if len(all_centers) >= 3:
-                    getAngle(all_centers, frame, i, height)
+                    getAngle(all_centers, frame, i, height, hit_state)
 
         elif ball_detected == True :
             ball_detected = False
+            hit_state = False
             all_centers.clear()
 
         imgStack = multiple_frames.stackImages(0.8, ([frame, mask1], [mask2, mask3]))
