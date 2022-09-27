@@ -4,6 +4,7 @@ import time
 import math
 import multiple_frames
 from pygame import mixer
+import pyautogui
 
 
 
@@ -61,9 +62,32 @@ def gradient(pt1, pt2):
     return (pt2[1]-pt1[1])/(pt2[0]-pt1[0])
 
 
+def keyWord(index):
+    if index == 1:
+        pyautogui.press("q")
+    elif index == 2:
+        pyautogui.press("w")
+    elif index == 3:
+        pyautogui.press("e")
+
+    elif index == 4:
+        pyautogui.press("a")
+    elif index == 5:
+        pyautogui.press("s")
+    elif index == 6:
+        pyautogui.press("d")
+
+    elif index == 7:
+        pyautogui.press("z")
+    elif index == 8:
+        pyautogui.press("x")
+    elif index == 9:
+        pyautogui.press("c")
+    
 
 def getAngle(all_centers,frame, index, frame_height, hit_state):
     pt1, pt2, pt3 = all_centers[-3:]
+    print(pt1)
 
     m1 = gradient(pt2, pt1)
     m2 = gradient(pt2, pt3)
@@ -74,9 +98,21 @@ def getAngle(all_centers,frame, index, frame_height, hit_state):
     cv2.putText(frame,str(angD), (pt1[0]-40, pt1[1]-20), cv2.FONT_HERSHEY_PLAIN, 1.5, (0,0,255, 2))
 
 
-    # time.sleep(0.5)
 
-    if abs(angD) > 17 and not hit_state:
+    flag11 = False
+    x1,y1 = sqaure_poses[0]
+    print(len(sqaure_poses))
+    for i in range(1,len(sqaure_poses)):
+        x2,y2 = sqaure_poses[i]
+        print(x1,pt1[1],x2,y1,pt1[0],y2)
+        if x1<pt1[1]<x2 and y1<pt1[0]<y2:
+            print("its here")
+            # time.sleep(0.5)
+            flag11 = True
+
+    if abs(angD) > 17 and not hit_state and flag11:
+
+        print(hit_state)
         hit_state = True
         cv2.putText(frame, "wall hit", (pt1[0] - 40, pt1[1] - 50), cv2.FACE_RECOGNIZER_SF_FR_COSINE, 1.5, (255, 0, 255, 2))
         mixer.init()
@@ -84,13 +120,17 @@ def getAngle(all_centers,frame, index, frame_height, hit_state):
         sound.play()
         cv2.imwrite("pics/frame"+str(index)+".png", cv2.resize(frame, (int(height / 2), int(width / 2))))
         data = (pt2[0],frame_height-pt2[1])
-        print("index 0",data[0], "index 1", data[1])
+        # print("index 0",data[0], "index 1", data[1])
+
+    return hit_state
 
 
 def mousePoints(event, x, y, flags, params):
     if event == cv2.EVENT_LBUTTONDOWN:
+        clicked_list.append([x,y])
+    elif event == cv2.EVENT_MOUSEMOVE:
+        point_list.clear()
         point_list.append([x,y])
-
 
 
 max_value = 255
@@ -126,13 +166,16 @@ greenUpper = (80, 255, 255)
 
 vs = cv2.VideoCapture(0)
 all_centers = [] # cordinates of ball in each frame
-point_list = [] # clicked postion
+clicked_list = [] # clicked postion
+point_list = [] # second postion 
+sqaure_poses = [] # x,y for each sqaure
+
 hit_state = False # when ball hit the wall 
 phase = 0
 i = 0
 
 ball_detected = False
-load = 0
+load = 1
 load = int(input("load parameters: "))
 
 while True:
@@ -148,11 +191,10 @@ while True:
         cv2.destroyAllWindows()
         file = open("threshold.txt", 'r')
         res = file.read()
-        print(res)
+        # print(res)
         arr = res.split(" ")
         greenLower = (int(arr[0]),int(arr[1]),int(arr[2]))
         greenUpper = (int(arr[3]),int(arr[4]),int(arr[5]))
-        print(greenLower, greenUpper)
         phase = 1
         load = 0
 
@@ -163,7 +205,7 @@ while True:
         cv2.imshow(window_detection_name, frame_threshold)
         cv2.setMouseCallback(window_capture_name, mousePoints)
 
-        if len(point_list) == 2 :
+        if len(clicked_list) == 2 :
             cv2.destroyAllWindows()
             greenLower = (low_H, low_S, low_V)
             greenUpper = (high_H, high_S, high_V)
@@ -173,30 +215,66 @@ while True:
             file.close()
 
             phase = 1
-            point_list.clear()
+            clicked_list.clear()
 
     if phase == 1:
-        for x,y in point_list:
+        for x,y in clicked_list:
             cv2.circle(frame, (x, y), 5, (0, 255, 255), cv2.FILLED)
         cv2.imshow("frame", frame)
         cv2.setMouseCallback("frame", mousePoints)
-        if len(point_list) == 2:
-            x1, y1 = point_list[0]
-            x2, y2 = point_list[1]
+        print(point_list)
+        if len(clicked_list) == 1:
+            x1, y1 = clicked_list[0]
+            x2, y2 = point_list[-1]
+            frame_height = y2-y1
+            frame_width = x2-x1
             cv2.rectangle(frame, (x1,y1), (x2,y2), (255,0,255), 4)
+
+            cv2.rectangle(frame, (x1,y1), (x1+frame_width//3,y1+frame_height//3), (255,0,255), 4)
+            cv2.rectangle(frame, (x1,y1), (x1+2*frame_width//3,y1+frame_height//3), (255,0,255), 4)
+            cv2.rectangle(frame, (x1,y1), (x1+3*frame_width//3,y1+frame_height//3), (255,0,255), 4)
+
+            cv2.rectangle(frame, (x1,y1), (x1+frame_width//3,y1+2*frame_height//3), (255,0,255), 4)
+            cv2.rectangle(frame, (x1,y1), (x1+2*frame_width//3,y1+2*frame_height//3), (255,0,255), 4)
+            cv2.rectangle(frame, (x1,y1), (x1+3*frame_width//3,y1+2*frame_height//3), (255,0,255), 4)
+
+            cv2.rectangle(frame, (x1,y1), (x1+frame_width//3,y1+3*frame_height//3), (255,0,255), 4)
+            cv2.rectangle(frame, (x1,y1), (x1+2*frame_width//3,y1+3*frame_height//3), (255,0,255), 4)
+            cv2.rectangle(frame, (x1,y1), (x1+3*frame_width//3,y1+3*frame_height//3), (255,0,255), 4)
+
+            sqaure_poses.clear()
+
+            sqaure_poses.append([x1,y1])
+
+            sqaure_poses.append([x1+frame_width//3,y1+frame_height//3])
+            sqaure_poses.append([x1+2*frame_width//3,y1+frame_height//3])
+            sqaure_poses.append([x1+3*frame_width//3,y1+frame_height//3])
+
+            sqaure_poses.append([x1+frame_width//3,y1+2*frame_height//3])
+            sqaure_poses.append([x1+2*frame_width//3,y1+2*frame_height//3])
+            sqaure_poses.append([x1+3*frame_width//3,y1+2*frame_height//3])
+
+            sqaure_poses.append([x1+frame_width//3,y1+3*frame_height//3])
+            sqaure_poses.append([x1+2*frame_width//3,y1+3*frame_height//3])
+            sqaure_poses.append([x1+3*frame_width//3,y1+3*frame_height//3])
+            
+
+            cv2.imshow("frame", frame)
+
+        elif len(clicked_list) == 2:
             phase = 2
             cv2.destroyAllWindows()
             i = 0
 
     elif phase == 2:
-        x1, y1 = point_list[0]
-        x2, y2 = point_list[1]
+        x1, y1 = clicked_list[0]
+        x2, y2 = clicked_list[1]
         frame = frame[y1:y2, x1:x2]
         blurred = cv2.GaussianBlur(frame, (11, 11), 0)
 
         height , width = frame.shape[:2]
 
-        print("w & h", width, height)
+        # print("w & h", width, height)
 
         hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
 
@@ -212,7 +290,7 @@ while True:
                                 cv2.CHAIN_APPROX_SIMPLE)
         cnts = imutils.grab_contours(cnts) # returns center
         center = None
-        # print(cnts)
+        # print(all_centers)
         if len(cnts) > 0:
             ball_detected = True
             c = max(cnts, key=cv2.contourArea)
@@ -220,14 +298,15 @@ while True:
             M = cv2.moments(c)
             center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
             # To see the centroid clearly
-            print("R : ",radius)
+            # print("R : ",radius)
             if radius > 1 and radius < 500:
                 cv2.circle(frame, (int(x), int(y)), int(radius), (0, 255, 255), 5)
                 all_centers.append(center)
                 for ii in all_centers:
                     cv2.circle(frame, ii, 5, (0, 0, 255), -1)
                 if len(all_centers) >= 3:
-                    getAngle(all_centers, frame, i, height, hit_state)
+                    hit_state = getAngle(all_centers, frame, i, height, hit_state)
+
 
         elif ball_detected == True :
             ball_detected = False
@@ -239,7 +318,7 @@ while True:
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
     if cv2.waitKey(1) & 0xFF == ord('c'):
-        point_list.clear()
+        clicked_list.clear()
 
 vs.release()
 cv2.destroyAllWindows()
