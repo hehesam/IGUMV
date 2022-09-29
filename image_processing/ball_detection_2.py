@@ -63,6 +63,7 @@ def gradient(pt1, pt2):
 
 
 def keyWord(index):
+    index += 1
     if index == 1:
         pyautogui.press("q")
     elif index == 2:
@@ -100,17 +101,19 @@ def getAngle(all_centers,frame, index, frame_height, hit_state):
 
 
     flag11 = False
-    x1,y1 = sqaure_poses[0]
-    print(len(sqaure_poses))
-    for i in range(1,len(sqaure_poses)):
-        x2,y2 = sqaure_poses[i]
-        print(x1,pt1[1],x2,y1,pt1[0],y2)
-        if x1<pt1[1]<x2 and y1<pt1[0]<y2:
-            print("its here")
-            # time.sleep(0.5)
-            flag11 = True
+    index = 0
+    if not hit_state:
+        for i in range(0,len(sqaure_poses)):
+            x1,y1,x2,y2 = sqaure_poses[i]
 
-    if abs(angD) > 17 and not hit_state and flag11:
+            if x1<pt1[0]<x2 and y1<pt1[1]<y2:
+                cv2.rectangle(frame,(x1,y1),(x2,y2), (255,255,255), 4)
+                print(i)
+                index = i
+                flag11 = True 
+                break
+
+    if abs(angD) > 17 and not hit_state and flag11 :
 
         print(hit_state)
         hit_state = True
@@ -119,10 +122,15 @@ def getAngle(all_centers,frame, index, frame_height, hit_state):
         sound = mixer.Sound("hit1.wav")
         sound.play()
         cv2.imwrite("pics/frame"+str(index)+".png", cv2.resize(frame, (int(height / 2), int(width / 2))))
-        data = (pt2[0],frame_height-pt2[1])
-        # print("index 0",data[0], "index 1", data[1])
+        # data = (pt2[0],frame_height-pt2[1])
+        keyWord(index)
 
     return hit_state
+
+def draw_sqaurs(frame,sqaure_poses):
+
+    for i in sqaure_poses:
+        cv2.rectangle(frame, (i[0],i[1]), (i[2],i[3]), (255,0,255), 4)
 
 
 def mousePoints(event, x, y, flags, params):
@@ -180,7 +188,7 @@ load = int(input("load parameters: "))
 
 while True:
     i += 1
-    print("frame : ",i)
+    # print("frame : ",i)
     _, frame = vs.read()
 
     if frame is None:
@@ -230,38 +238,49 @@ while True:
             frame_width = x2-x1
             cv2.rectangle(frame, (x1,y1), (x2,y2), (255,0,255), 4)
 
-            cv2.rectangle(frame, (x1,y1), (x1+frame_width//3,y1+frame_height//3), (255,0,255), 4)
-            cv2.rectangle(frame, (x1,y1), (x1+2*frame_width//3,y1+frame_height//3), (255,0,255), 4)
-            cv2.rectangle(frame, (x1,y1), (x1+3*frame_width//3,y1+frame_height//3), (255,0,255), 4)
+            cv2.rectangle(frame, (x1,                                   y1), (x1+frame_width//3,y1+frame_height//3), (255,0,255), 4)
+            cv2.rectangle(frame, (x1+frame_width//3,                    y1), (x1+2*frame_width//3,y1+frame_height//3), (255,0,255), 4)
+            cv2.rectangle(frame, (x1+2*frame_width//3,                  y1), (x1+3*frame_width//3,y1+frame_height//3), (255,0,255), 4)
 
-            cv2.rectangle(frame, (x1,y1), (x1+frame_width//3,y1+2*frame_height//3), (255,0,255), 4)
-            cv2.rectangle(frame, (x1,y1), (x1+2*frame_width//3,y1+2*frame_height//3), (255,0,255), 4)
-            cv2.rectangle(frame, (x1,y1), (x1+3*frame_width//3,y1+2*frame_height//3), (255,0,255), 4)
+            cv2.rectangle(frame, (x1,                   y1+frame_height//3), (x1+frame_width//3,y1+2*frame_height//3), (255,0,255), 4)
+            cv2.rectangle(frame, (x1+frame_width//3,    y1+frame_height//3), (x1+2*frame_width//3,y1+2*frame_height//3), (255,0,255), 4)
+            cv2.rectangle(frame, (x1+2*frame_width//3,  y1+frame_height//3), (x1+3*frame_width//3,y1+2*frame_height//3), (255,0,255), 4)
 
-            cv2.rectangle(frame, (x1,y1), (x1+frame_width//3,y1+3*frame_height//3), (255,0,255), 4)
-            cv2.rectangle(frame, (x1,y1), (x1+2*frame_width//3,y1+3*frame_height//3), (255,0,255), 4)
-            cv2.rectangle(frame, (x1,y1), (x1+3*frame_width//3,y1+3*frame_height//3), (255,0,255), 4)
+            cv2.rectangle(frame, (x1,                   y1+2*frame_height//3), (x1+frame_width//3,y1+3*frame_height//3), (255,0,255), 4)
+            cv2.rectangle(frame, (x1+frame_width//3,    y1+2*frame_height//3), (x1+2*frame_width//3,y1+3*frame_height//3), (255,0,255), 4)
+            cv2.rectangle(frame, (x1+2*frame_width//3,  y1+2*frame_height//3), (x1+3*frame_width//3,y1+3*frame_height//3), (255,0,255), 4)
 
-            sqaure_poses.clear()
+            # sqaure_poses.clear()
 
-            sqaure_poses.append([x1,y1])
 
-            sqaure_poses.append([x1+frame_width//3,y1+frame_height//3])
-            sqaure_poses.append([x1+2*frame_width//3,y1+frame_height//3])
-            sqaure_poses.append([x1+3*frame_width//3,y1+frame_height//3])
 
-            sqaure_poses.append([x1+frame_width//3,y1+2*frame_height//3])
-            sqaure_poses.append([x1+2*frame_width//3,y1+2*frame_height//3])
-            sqaure_poses.append([x1+3*frame_width//3,y1+2*frame_height//3])
 
-            sqaure_poses.append([x1+frame_width//3,y1+3*frame_height//3])
-            sqaure_poses.append([x1+2*frame_width//3,y1+3*frame_height//3])
-            sqaure_poses.append([x1+3*frame_width//3,y1+3*frame_height//3])
             
 
             cv2.imshow("frame", frame)
 
         elif len(clicked_list) == 2:
+            x1, y1 = clicked_list[0]
+            x2, y2 = clicked_list[1]
+            frame = frame[y1:y2, x1:x2]
+            frame_height = y2-y1
+            frame_width = x2-x1
+            x1, y1 = 0,0
+
+
+            sqaure_poses.append([x1,y1,x1+frame_width//3,y1+frame_height//3])
+            sqaure_poses.append([x1+frame_width//3,y1,x1+2*frame_width//3,y1+frame_height//3])
+            sqaure_poses.append([x1+2*frame_width//3,                  y1,x1+3*frame_width//3,y1+frame_height//3])
+
+            sqaure_poses.append([x1,                   y1+frame_height//3,x1+frame_width//3,y1+2*frame_height//3])
+            sqaure_poses.append([x1+frame_width//3,    y1+frame_height//3,x1+2*frame_width//3,y1+2*frame_height//3])
+            sqaure_poses.append([x1+2*frame_width//3,  y1+frame_height//3,x1+3*frame_width//3,y1+2*frame_height//3])
+
+            sqaure_poses.append([x1,                   y1+2*frame_height//3,x1+frame_width//3,y1+3*frame_height//3])
+            sqaure_poses.append([x1+frame_width//3,    y1+2*frame_height//3,x1+2*frame_width//3,y1+3*frame_height//3])
+            sqaure_poses.append([x1+2*frame_width//3,  y1+2*frame_height//3,x1+3*frame_width//3,y1+3*frame_height//3])
+            
+
             phase = 2
             cv2.destroyAllWindows()
             i = 0
@@ -291,6 +310,7 @@ while True:
         cnts = imutils.grab_contours(cnts) # returns center
         center = None
         # print(all_centers)
+        draw_sqaurs(frame,sqaure_poses)
         if len(cnts) > 0:
             ball_detected = True
             c = max(cnts, key=cv2.contourArea)
@@ -312,6 +332,8 @@ while True:
             ball_detected = False
             hit_state = False
             all_centers.clear()
+
+
 
         imgStack = multiple_frames.stackImages(0.8, ([frame, mask1], [mask2, mask3]))
         cv2.imshow("Frame", imgStack)
