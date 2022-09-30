@@ -88,7 +88,6 @@ def keyWord(index):
 
 def getAngle(all_centers,frame, index, frame_height, hit_state):
     pt1, pt2, pt3 = all_centers[-3:]
-    print(pt1)
 
     m1 = gradient(pt2, pt1)
     m2 = gradient(pt2, pt3)
@@ -108,21 +107,18 @@ def getAngle(all_centers,frame, index, frame_height, hit_state):
 
             if x1<pt1[0]<x2 and y1<pt1[1]<y2:
                 cv2.rectangle(frame,(x1,y1),(x2,y2), (255,255,255), 4)
-                print(i)
                 index = i
                 flag11 = True 
                 break
 
     if abs(angD) > 17 and not hit_state and flag11 :
 
-        print(hit_state)
         hit_state = True
         cv2.putText(frame, "wall hit", (pt1[0] - 40, pt1[1] - 50), cv2.FACE_RECOGNIZER_SF_FR_COSINE, 1.5, (255, 0, 255, 2))
         mixer.init()
         sound = mixer.Sound("hit1.wav")
         sound.play()
         cv2.imwrite("pics/frame"+str(index)+".png", cv2.resize(frame, (int(height / 2), int(width / 2))))
-        # data = (pt2[0],frame_height-pt2[1])
         keyWord(index)
 
     return hit_state
@@ -199,7 +195,6 @@ while True:
         cv2.destroyAllWindows()
         file = open("threshold.txt", 'r')
         res = file.read()
-        # print(res)
         arr = res.split(" ")
         greenLower = (int(arr[0]),int(arr[1]),int(arr[2]))
         greenUpper = (int(arr[3]),int(arr[4]),int(arr[5]))
@@ -230,7 +225,6 @@ while True:
             cv2.circle(frame, (x, y), 5, (0, 255, 255), cv2.FILLED)
         cv2.imshow("frame", frame)
         cv2.setMouseCallback("frame", mousePoints)
-        print(point_list)
         if len(clicked_list) == 1:
             x1, y1 = clicked_list[0]
             x2, y2 = point_list[-1]
@@ -293,7 +287,6 @@ while True:
 
         height , width = frame.shape[:2]
 
-        # print("w & h", width, height)
 
         hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
 
@@ -309,7 +302,6 @@ while True:
                                 cv2.CHAIN_APPROX_SIMPLE)
         cnts = imutils.grab_contours(cnts) # returns center
         center = None
-        # print(all_centers)
         draw_sqaurs(frame,sqaure_poses)
         if len(cnts) > 0:
             ball_detected = True
@@ -318,7 +310,6 @@ while True:
             M = cv2.moments(c)
             center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
             # To see the centroid clearly
-            # print("R : ",radius)
             if radius > 1 and radius < 500:
                 cv2.circle(frame, (int(x), int(y)), int(radius), (0, 255, 255), 5)
                 all_centers.append(center)
@@ -337,10 +328,9 @@ while True:
 
         imgStack = multiple_frames.stackImages(0.8, ([frame, mask1], [mask2, mask3]))
         cv2.imshow("Frame", imgStack)
-    if cv2.waitKey(1) & 0xFF == ord('q'):
+    if cv2.waitKey(1) & 0xFF == ord('t'):
         break
-    if cv2.waitKey(1) & 0xFF == ord('c'):
-        clicked_list.clear()
+
 
 vs.release()
 cv2.destroyAllWindows()
